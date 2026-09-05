@@ -2,6 +2,7 @@
 	request_body {
 		max_size 64MB
 	}
+	header *.mjs Content-Type "application/javascript"
 	reverse_proxy app:80
 }
 
