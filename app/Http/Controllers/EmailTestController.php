@@ -37,7 +37,7 @@ class EmailTestController extends Controller
     {
         $validated = $request->validate([
             'test_to' => ['required', 'email'],
-            'email_provider' => ['nullable', 'string', 'in:smtp,hostinger,sendgrid'],
+            'email_provider' => ['nullable', 'string', 'in:smtp,hostinger,sendgrid,brevo'],
             'smtp_host' => ['nullable', 'string'],
             'smtp_port' => ['nullable', 'string'],
             'smtp_username' => ['nullable', 'string'],
@@ -48,6 +48,10 @@ class EmailTestController extends Controller
             'sendgrid_api_key' => ['nullable', 'string'],
             'sendgrid_mail_from_address' => ['nullable', 'email', 'max:255'],
             'sendgrid_mail_from_name' => ['nullable', 'string', 'max:255'],
+            'brevo_smtp_username' => ['nullable', 'string'],
+            'brevo_smtp_key' => ['nullable', 'string'],
+            'brevo_mail_from_address' => ['nullable', 'email', 'max:255'],
+            'brevo_mail_from_name' => ['nullable', 'string', 'max:255'],
             'mail_from_address' => ['nullable', 'email', 'max:255'],
             'mail_from_name' => ['nullable', 'string', 'max:255'],
         ]);
@@ -61,7 +65,7 @@ class EmailTestController extends Controller
 
         try {
             $appName = config('getfy.app_name');
-            $body = "<p>Este é um e-mail de teste enviado por {$appName}.</p>";
+            $body = "<p>Este é um e‑mail de teste enviado por {$appName}.</p>";
             Mail::mailer('smtp')->to($validated['test_to'])->send(new \App\Mail\TestEmail('E‑mail de teste - '.$appName, $body));
             return response()->json(['success' => true]);
         } catch (\Throwable $e) {
@@ -74,7 +78,7 @@ class EmailTestController extends Controller
         $tenantId = auth()->user()->tenant_id;
 
         $validated = $request->validate([
-            'email_provider' => ['nullable', 'string', 'in:smtp,hostinger,sendgrid'],
+            'email_provider' => ['nullable', 'string', 'in:smtp,hostinger,sendgrid,brevo'],
             'smtp_host' => ['nullable', 'string'],
             'smtp_port' => ['nullable', 'string'],
             'smtp_username' => ['nullable', 'string'],
@@ -85,6 +89,10 @@ class EmailTestController extends Controller
             'sendgrid_api_key' => ['nullable', 'string'],
             'sendgrid_mail_from_address' => ['nullable', 'email', 'max:255'],
             'sendgrid_mail_from_name' => ['nullable', 'string', 'max:255'],
+            'brevo_smtp_username' => ['nullable', 'string'],
+            'brevo_smtp_key' => ['nullable', 'string'],
+            'brevo_mail_from_address' => ['nullable', 'email', 'max:255'],
+            'brevo_mail_from_name' => ['nullable', 'string', 'max:255'],
             'mail_from_address' => ['nullable', 'email', 'max:255'],
             'mail_from_name' => ['nullable', 'string', 'max:255'],
         ]);
@@ -107,7 +115,7 @@ class EmailTestController extends Controller
         }
     }
 
-    /** Build overrides for applyMailerConfig from request (smtp_* or hostinger_* or sendgrid_*). */
+    /** Build overrides for applyMailerConfig from request (smtp_* or hostinger_* or sendgrid_* or brevo_*). */
     protected function buildMailOverridesFromRequest(array $validated, string $provider): array
     {
         $overrides = [];
@@ -129,6 +137,19 @@ class EmailTestController extends Controller
                 $overrides['smtp_password'] = $validated['hostinger_smtp_password'];
             }
             // host/port/encryption are fixed, no overrides
+        } elseif ($provider === 'brevo') {
+            if (! empty($validated['brevo_smtp_username'])) {
+                $overrides['brevo_smtp_username'] = $validated['brevo_smtp_username'];
+            }
+            if (! empty($validated['brevo_smtp_key'])) {
+                $overrides['brevo_smtp_key'] = $validated['brevo_smtp_key'];
+            }
+            if (! empty($validated['brevo_mail_from_address'])) {
+                $overrides['brevo_mail_from_address'] = $validated['brevo_mail_from_address'];
+            }
+            if (isset($validated['brevo_mail_from_name'])) {
+                $overrides['brevo_mail_from_name'] = $validated['brevo_mail_from_name'];
+            }
         } else {
             foreach (['smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_encryption', 'mail_from_address', 'mail_from_name'] as $k) {
                 if (isset($validated[$k]) && $validated[$k] !== null && $validated[$k] !== '') {

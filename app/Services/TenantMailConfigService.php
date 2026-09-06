@@ -30,6 +30,14 @@ class TenantMailConfigService
                 return true;
             }
         }
+        $brevoUser = Setting::get('brevo_smtp_username', '', $tenantId);
+        if ($brevoUser !== null && $brevoUser !== '') {
+            $encrypted = Setting::get('brevo_smtp_key', null, $tenantId);
+            $key = $encrypted ? @decrypt($encrypted) : null;
+            if ($key !== null && $key !== '') {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -60,6 +68,18 @@ class TenantMailConfigService
             $password = $overrides['smtp_password'] ?? null;
             if ($password === null) {
                 $encrypted = Setting::get('hostinger_smtp_password', null, $tenantId);
+                $password = $encrypted ? @decrypt($encrypted) : null;
+            }
+            return ['host' => $host, 'port' => $port, 'encryption' => $encryption, 'username' => $username, 'password' => $password];
+        }
+        if ($provider === 'brevo') {
+            $host = 'smtp-relay.brevo.com';
+            $port = 587;
+            $encryption = 'tls';
+            $username = $overrides['brevo_smtp_username'] ?? Setting::get('brevo_smtp_username', '', $tenantId);
+            $password = $overrides['brevo_smtp_key'] ?? null;
+            if ($password === null) {
+                $encrypted = Setting::get('brevo_smtp_key', null, $tenantId);
                 $password = $encrypted ? @decrypt($encrypted) : null;
             }
             return ['host' => $host, 'port' => $port, 'encryption' => $encryption, 'username' => $username, 'password' => $password];
@@ -112,7 +132,7 @@ class TenantMailConfigService
             return $row->tenant_id;
         }
         $row = Setting::query()
-            ->whereIn('key', ['hostinger_smtp_username', 'sendgrid_api_key'])
+            ->whereIn('key', ['hostinger_smtp_username', 'sendgrid_api_key', 'brevo_smtp_username'])
             ->whereNotNull('value')
             ->where('value', '!=', '')
             ->orderBy('tenant_id')
@@ -145,6 +165,13 @@ class TenantMailConfigService
             }
             $fromName = Setting::get('hostinger_mail_from_name', config('mail.from.name'), $tenantId);
             $replyTo = Setting::get('hostinger_reply_to', null, $tenantId);
+        } elseif ($provider === 'brevo') {
+            $brevoFrom = $overrides['brevo_mail_from_address'] ?? Setting::get('brevo_mail_from_address', '', $tenantId);
+            if ($brevoFrom !== null && $brevoFrom !== '') {
+                $fromAddress = $brevoFrom;
+            }
+            $fromName = $overrides['brevo_mail_from_name'] ?? Setting::get('brevo_mail_from_name', config('mail.from.name'), $tenantId);
+            $replyTo = null;
         } else {
             $smtpFrom = $overrides['mail_from_address'] ?? Setting::get('mail_from_address', '', $tenantId);
             if ($smtpFrom !== null && $smtpFrom !== '') {

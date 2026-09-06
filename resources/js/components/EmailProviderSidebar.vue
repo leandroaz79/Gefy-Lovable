@@ -33,6 +33,7 @@ function handleSendTest() {
 
 const hasFixedDefaults = computed(() => !!props.provider?.defaults);
 const isSendGrid = computed(() => props.provider?.id === 'sendgrid');
+const isBrevo = computed(() => props.provider?.id === 'brevo');
 
 const inputClass =
     'block w-full rounded-xl border-2 border-zinc-200 bg-white px-4 py-2.5 text-zinc-900 placeholder-zinc-400 transition focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white dark:placeholder-zinc-500';
@@ -117,8 +118,55 @@ const fixedValueClass =
           </section>
         </template>
 
+        <!-- Brevo: SMTP com credenciais -->
+        <template v-else-if="isBrevo">
+          <section class="space-y-4">
+            <h3 class="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Configuração Brevo</h3>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400">
+              Obtenha as credenciais SMTP em <a href="https://app.brevo.com/settings/keys/smtp" target="_blank" rel="noopener noreferrer" class="text-[var(--color-primary)] underline">Brevo &gt; Configurações &gt; Chaves SMTP</a>.
+            </p>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Host</label>
+                <div :class="fixedValueClass">smtp-relay.brevo.com</div>
+              </div>
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Porta</label>
+                <div :class="fixedValueClass">587</div>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Criptografia</label>
+                <div :class="fixedValueClass">TLS</div>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">E-mail de login SMTP</label>
+                <input v-model="form.brevo_smtp_username" type="email" :class="inputClass" placeholder="seu@email.com" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Chave SMTP (deixe em branco para manter)</label>
+                <input v-model="form.brevo_smtp_key" type="password" autocomplete="new-password" :class="inputClass" placeholder="xsmtpsib-..." />
+              </div>
+            </div>
+          </section>
+
+          <section class="space-y-4">
+            <h3 class="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Remetente</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">E-mail do remetente</label>
+                <input v-model="form.brevo_mail_from_address" type="email" :class="inputClass" placeholder="noreply@seudominio.com" />
+                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">O remetente deve estar verificado no Brevo (Transacional &gt; Remetentes).</p>
+              </div>
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Nome do remetente</label>
+                <input v-model="form.brevo_mail_from_name" type="text" :class="inputClass" placeholder="Ex: Minha Loja" />
+              </div>
+            </div>
+          </section>
+        </template>
+
         <!-- SMTP Configuration (Hostinger ou SMTP genérico) -->
-        <section v-else class="space-y-4">
+        <section v-else-if="!isBrevo" class="space-y-4">
           <h3 class="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Configurações SMTP</h3>
           
           <div class="grid gap-4 sm:grid-cols-2">
@@ -174,7 +222,7 @@ const fixedValueClass =
         </section>
 
         <!-- Remetente: Hostinger usa o e-mail do usuário SMTP; SMTP genérico permite e-mail separado -->
-        <section v-if="!isSendGrid && hasFixedDefaults" class="space-y-4">
+        <section v-if="!isSendGrid && !isBrevo && hasFixedDefaults" class="space-y-4">
           <h3 class="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Remetente (nome)</h3>
           <p class="text-sm text-zinc-500 dark:text-zinc-400">O e-mail do remetente é o mesmo do usuário SMTP acima. Defina apenas o nome exibido:</p>
           <div>
@@ -183,7 +231,7 @@ const fixedValueClass =
           </div>
         </section>
 
-        <section v-if="!isSendGrid && !hasFixedDefaults" class="space-y-4">
+        <section v-if="!isSendGrid && !isBrevo && !hasFixedDefaults" class="space-y-4">
           <h3 class="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Remetente</h3>
           <div class="space-y-4">
             <div>

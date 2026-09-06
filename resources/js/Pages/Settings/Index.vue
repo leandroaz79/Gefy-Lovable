@@ -158,6 +158,10 @@ const form = useForm({
     sendgrid_api_key: '', // never pre-fill API key
     sendgrid_mail_from_address: props.settings.sendgrid_mail_from_address ?? '',
     sendgrid_mail_from_name: props.settings.sendgrid_mail_from_name ?? '',
+    brevo_smtp_username: props.settings.brevo_smtp_username ?? '',
+    brevo_smtp_key: '', // never pre-fill key
+    brevo_mail_from_address: props.settings.brevo_mail_from_address ?? '',
+    brevo_mail_from_name: props.settings.brevo_mail_from_name ?? '',
     checkout_translations: defaultTranslations(),
     currencies: defaultCurrencies(),
     storage_provider: props.settings.storage_provider ?? 'local',
@@ -484,6 +488,11 @@ async function testConnection() {
         payload.sendgrid_api_key = form.sendgrid_api_key;
         payload.sendgrid_mail_from_address = form.sendgrid_mail_from_address;
         payload.sendgrid_mail_from_name = form.sendgrid_mail_from_name;
+    } else if (provider === 'brevo') {
+        payload.brevo_smtp_username = form.brevo_smtp_username;
+        payload.brevo_smtp_key = form.brevo_smtp_key;
+        payload.brevo_mail_from_address = form.brevo_mail_from_address;
+        payload.brevo_mail_from_name = form.brevo_mail_from_name;
     } else {
         payload.smtp_host = form.smtp_host;
         payload.smtp_port = form.smtp_port;
@@ -523,6 +532,11 @@ async function sendTestEmail() {
         payload.sendgrid_api_key = form.sendgrid_api_key;
         payload.sendgrid_mail_from_address = form.sendgrid_mail_from_address;
         payload.sendgrid_mail_from_name = form.sendgrid_mail_from_name;
+    } else if (provider === 'brevo') {
+        payload.brevo_smtp_username = form.brevo_smtp_username;
+        payload.brevo_smtp_key = form.brevo_smtp_key;
+        payload.brevo_mail_from_address = form.brevo_mail_from_address;
+        payload.brevo_mail_from_name = form.brevo_mail_from_name;
     } else {
         payload.smtp_host = form.smtp_host;
         payload.smtp_port = form.smtp_port;
@@ -714,6 +728,13 @@ const providers = [
         logo: '/images/integrations/twillio-sendgrid.jpg',
         description: 'Envio via API Key SendGrid',
     },
+    {
+        id: 'brevo',
+        title: 'Brevo',
+        logo: '/images/integrations/brevo.svg',
+        description: 'Envio via SMTP Brevo',
+        defaults: { smtp_host: 'smtp-relay.brevo.com', smtp_port: '587', smtp_encryption: 'tls' },
+    },
 ];
 
 const selectedProviderId = ref(form.email_provider || 'smtp');
@@ -750,6 +771,9 @@ function isProviderConfigured(providerId) {
     }
     if (providerId === 'sendgrid') {
         return !!form.sendgrid_mail_from_address;
+    }
+    if (providerId === 'brevo') {
+        return !!form.brevo_smtp_username;
     }
     return false;
 }
