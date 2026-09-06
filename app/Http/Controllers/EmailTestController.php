@@ -60,6 +60,14 @@ class EmailTestController extends Controller
         $provider = $validated['email_provider'] ?? Setting::get('email_provider', 'smtp', $tenantId);
         $overrides = $this->buildMailOverridesFromRequest($validated, $provider);
 
+        if ($provider === 'brevo') {
+            \Log::info('Brevo send test', [
+                'tenant_id' => $tenantId,
+                'has_override_key' => isset($overrides['brevo_smtp_key']),
+                'override_key_empty' => isset($overrides['brevo_smtp_key']) && $overrides['brevo_smtp_key'] === '',
+            ]);
+        }
+
         $this->mailConfig->applyMailerConfigForTenant($tenantId, $overrides, $provider);
         Mail::purge('smtp');
 
@@ -69,6 +77,7 @@ class EmailTestController extends Controller
             Mail::mailer('smtp')->to($validated['test_to'])->send(new \App\Mail\TestEmail('E‑mail de teste - '.$appName, $body));
             return response()->json(['success' => true]);
         } catch (\Throwable $e) {
+            \Log::error('Brevo send test failed', ['provider' => $provider, 'error' => $e->getMessage()]);
             return response()->json(['error' => $e->getMessage()], 422);
         }
     }
@@ -101,6 +110,15 @@ class EmailTestController extends Controller
         $overrides = $this->buildMailOverridesFromRequest($validated, $provider);
         $config = $this->mailConfig->getMailConfigForProvider($tenantId, $overrides, $provider);
 
+        if ($provider === 'brevo') {
+            \Log::info('Brevo connection test', [
+                'tenant_id' => $tenantId,
+                'username' => $config['username'],
+                'has_password' => $config['password'] !== null && $config['password'] !== '',
+                'password_length' => $config['password'] ? strlen($config['password']) : 0,
+            ]);
+        }
+
         try {
             $this->smtpConnectionCheck(
                 (string) $config['host'],
@@ -111,6 +129,7 @@ class EmailTestController extends Controller
             );
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
+            \Log::error('Brevo connection test failed', ['provider' => $provider, 'error' => $e->getMessage()]);
             return response()->json(['error' => $e->getMessage()], 422);
         }
     }

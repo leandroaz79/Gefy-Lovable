@@ -33,7 +33,12 @@ class TenantMailConfigService
         $brevoUser = Setting::get('brevo_smtp_username', '', $tenantId);
         if ($brevoUser !== null && $brevoUser !== '') {
             $encrypted = Setting::get('brevo_smtp_key', null, $tenantId);
-            $key = $encrypted ? @decrypt($encrypted) : null;
+            try {
+                $key = $encrypted ? decrypt($encrypted) : null;
+            } catch (\Throwable $e) {
+                \Log::warning('Brevo key decryption failed in isEmailConfigured', ['error' => $e->getMessage()]);
+                $key = null;
+            }
             if ($key !== null && $key !== '') {
                 return true;
             }
@@ -78,9 +83,26 @@ class TenantMailConfigService
             $encryption = 'tls';
             $username = $overrides['brevo_smtp_username'] ?? Setting::get('brevo_smtp_username', '', $tenantId);
             $password = $overrides['brevo_smtp_key'] ?? null;
+            \Log::info('Brevo mail config', [
+                'tenant_id' => $tenantId,
+                'has_override_key' => isset($overrides['brevo_smtp_key']),
+                'override_key_empty' => isset($overrides['brevo_smtp_key']) && $overrides['brevo_smtp_key'] === '',
+                'username' => $username,
+            ]);
             if ($password === null) {
                 $encrypted = Setting::get('brevo_smtp_key', null, $tenantId);
-                $password = $encrypted ? @decrypt($encrypted) : null;
+                \Log::info('Brevo decryption attempt', [
+                    'has_encrypted' => $encrypted !== null && $encrypted !== '',
+                ]);
+                if ($encrypted) {
+                    try {
+                        $password = decrypt($encrypted);
+                        \Log::info('Brevo decryption success', ['password_length' => strlen($password)]);
+                    } catch (\Throwable $e) {
+                        \Log::error('Brevo decryption failed', ['error' => $e->getMessage()]);
+                        $password = null;
+                    }
+                }
             }
             return ['host' => $host, 'port' => $port, 'encryption' => $encryption, 'username' => $username, 'password' => $password];
         }

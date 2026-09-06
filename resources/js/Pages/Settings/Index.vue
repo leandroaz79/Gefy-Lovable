@@ -513,6 +513,9 @@ async function testConnection() {
             msg = Object.values(testForm.errors).flat().join(' ');
         } else if (e && e.response && e.response.data && e.response.data.error) {
             msg = e.response.data.error;
+            if (msg.includes('Authentication failed') || msg.includes('535')) {
+                msg += '\n\nDica: Se as credenciais estão corretas, verifique se o APP_KEY desta instância é o mesmo da instância original. Chaves diferentes impedem a descriptografia da senha salva.';
+            }
         }
         connectionResult.value.message = msg;
     } finally {
@@ -559,6 +562,9 @@ async function sendTestEmail() {
         let msg = 'Erro ao enviar e‑mail de teste.';
         if (e && e.response && e.response.data && e.response.data.error) {
             msg = e.response.data.error;
+            if (msg.includes('Authentication failed') || msg.includes('535')) {
+                msg += '\n\nDica: Se as credenciais estão corretas, verifique se o APP_KEY desta instância é o mesmo da instância original. Chaves diferentes impedem a descriptografia da senha salva.';
+            }
         }
         sendResult.value.message = msg;
         setTimeout(() => {
