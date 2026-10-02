@@ -140,12 +140,6 @@ const ytMaskBranding = computed(() => {
     return ytMaskActive.value;
 });
 
-/** Pausado após iniciar: cobre iframe para não exibir UI nativa do YouTube (título, cards, ícone). */
-const ytPausedCover = computed(() => {
-    if (!ytReady.value || ytIsPlaying.value || ytPosterVisible.value) return false;
-    return ytCurrentTime.value > 0.5;
-});
-
 function loadYoutubeApiOnce() {
     if (typeof window === 'undefined') return Promise.reject(new Error('no_window'));
     if (ytApiPromise) return ytApiPromise;
@@ -1137,10 +1131,6 @@ function onContextMenu(e) {
                     :style="{ backgroundImage: `url('${posterUrl}')` }"
                 />
             </div>
-            <div v-else-if="ytPausedCover && posterUrl" class="yt-pause-cover" aria-hidden="true">
-                <img :src="posterUrl" alt="" class="yt-pause-cover-img" />
-            </div>
-            <div v-else-if="ytPausedCover" class="yt-pause-cover yt-pause-cover-fallback" aria-hidden="true" />
             <!-- Camada por cima do iframe para bloquear UI/overlays do YouTube (logo, menus, playlist). -->
             <button
                 type="button"
@@ -1436,22 +1426,6 @@ function onContextMenu(e) {
     max-width: none;
     pointer-events: none;
     border: 0;
-    display: block;
-}
-.yt-pause-cover {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    background: #000;
-    pointer-events: none;
-}
-.yt-pause-cover-fallback {
-    background: #000;
-}
-.yt-pause-cover-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
     display: block;
 }
 .yt-mask {
